@@ -1,0 +1,863 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RouteGen â€“ Smart Delivery Route Optimizer</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- jsPDF & autoTable for Client-Side PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="./frontend/static/css/style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- ================= SIDEBAR ================= -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand-icon">
+                    <i data-lucide="route"></i>
+                </div>
+                <div class="brand-info">
+                    <h1>RouteGen</h1>
+                    <span class="brand-badge">Genetic Algorithm</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a class="nav-item active" data-tab="dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a class="nav-item" data-tab="locations">
+                    <i data-lucide="map-pin"></i>
+                    <span>Manage Locations</span>
+                </a>
+                <a class="nav-item" data-tab="optimizer">
+                    <i data-lucide="cpu"></i>
+                    <span>Optimize Route</span>
+                </a>
+                <a class="nav-item" data-tab="map">
+                    <i data-lucide="map"></i>
+                    <span>Route Map</span>
+                </a>
+                <a class="nav-item" data-tab="reports">
+                    <i data-lucide="file-text"></i>
+                    <span>Reports</span>
+                </a>
+                <a class="nav-item" data-tab="settings">
+                    <i data-lucide="settings"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile-badge">
+                    <div class="user-avatar" id="user-avatar-initials">RG</div>
+                    <div class="user-meta">
+                        <div class="user-name" id="user-display-name">Demo Dispatcher</div>
+                        <div class="user-role" id="user-display-role">Logistics Dispatch</div>
+                    </div>
+                </div>
+                <button class="btn-logout" id="btn-logout">
+                    <i data-lucide="log-out"></i>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ================= MAIN WRAPPER ================= -->
+        <main class="main-wrapper">
+            <!-- Top Header -->
+            <header class="top-header">
+                <div class="page-title">
+                    <h2 id="top-title">Dashboard Overview</h2>
+                    <p id="top-subtitle">Intelligent Last-Mile Delivery Sequence Optimization</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="App.openModal('modal-auth')">
+                        <i data-lucide="user-check"></i>
+                        <span>Account</span>
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="App.switchTab('optimizer')">
+                        <i data-lucide="zap"></i>
+                        <span>Run Optimization</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Views Container -->
+            <div class="views-container">
+
+                <!-- ================= 1. DASHBOARD VIEW ================= -->
+                <section id="view-dashboard" class="view-section active">
+                    <!-- KPI Cards Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Total Deliveries</span>
+                                <div class="stat-icon"><i data-lucide="package"></i></div>
+                            </div>
+                            <div class="stat-value" id="stat-total-deliveries">0</div>
+                            <div class="stat-subtext">Active destinations in pool</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Distance Travelled</span>
+                                <div class="stat-icon"><i data-lucide="navigation"></i></div>
+                            </div>
+                            <div class="stat-value" id="stat-distance-travelled">0.0 km</div>
+                            <div class="stat-subtext">Cumulative optimized transit</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Optimized Routes</span>
+                                <div class="stat-icon"><i data-lucide="layers"></i></div>
+                            </div>
+                            <div class="stat-value" id="stat-optimized-routes">0</div>
+                            <div class="stat-subtext">GA execution runs completed</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Distance Saved</span>
+                                <div class="stat-icon"><i data-lucide="trending-down"></i></div>
+                            </div>
+                            <div class="stat-value" id="stat-distance-saved" style="color: #10b981;">0.0 km</div>
+                            <div class="stat-subtext">
+                                Avg. <span class="stat-badge-positive" id="stat-avg-improvement">0%</span> reduction
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Eco Stats Banner -->
+                    <div class="card" style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 182, 212, 0.05) 100%);">
+                        <div class="card-body" style="padding: 18px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+                            <div style="display: flex; align-items: center; gap: 14px;">
+                                <div style="font-size: 1.8rem;">ðŸŒ±</div>
+                                <div>
+                                    <div style="font-size: 0.95rem; font-weight: 700; color: #fff;">Sustainability & Fuel Efficiency Impact</div>
+                                    <div style="font-size: 0.78rem; color: #94a3b8;">Real ecological savings calculated from Haversine TSP optimization</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 28px;">
+                                <div>
+                                    <div style="font-size: 0.76rem; color: #94a3b8; text-transform: uppercase;">COâ‚‚ Emissions Avoided</div>
+                                    <div style="font-size: 1.3rem; font-weight: 800; color: #10b981;" id="stat-co2-saved">0.0 kg</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.76rem; color: #94a3b8; text-transform: uppercase;">Estimated Fuel Cost Saved</div>
+                                    <div style="font-size: 1.3rem; font-weight: 800; color: #38bdf8;" id="stat-fuel-saved">$0.00</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Historical Savings Trend Chart -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3><i data-lucide="bar-chart-2"></i> Route Optimization Efficiency History</h3>
+                                <p>Kilometers saved and percentage improvement across historical Genetic Algorithm runs</p>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-card-body">
+                                <canvas id="chart-dashboard-trend"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Optimizations Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3><i data-lucide="history"></i> Recent Route Optimizations</h3>
+                                <p>Latest dispatch jobs processed by the Genetic Algorithm engine</p>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" onclick="App.switchTab('reports')">
+                                <span>View All Reports</span>
+                                <i data-lucide="arrow-right"></i>
+                            </button>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Run ID</th>
+                                            <th>Optimization Job</th>
+                                            <th>Destinations</th>
+                                            <th>Optimized Tour</th>
+                                            <th>Distance Saved</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dashboard-recent-table">
+                                        <!-- Dynamically populated -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= 2. MANAGE LOCATIONS VIEW ================= -->
+                <section id="view-locations" class="view-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3><i data-lucide="map-pin"></i> Delivery Destinations & Warehouse</h3>
+                                <p>Manage customer drops, coordinates, priorities, and set starting depot</p>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-secondary btn-sm" id="btn-pick-coords">
+                                    <i data-lucide="crosshair"></i>
+                                    <span>Pick on Map</span>
+                                </button>
+                                <button class="btn btn-primary btn-sm" onclick="LocationsManager.openAddModal()">
+                                    <i data-lucide="plus"></i>
+                                    <span>Add Location</span>
+                                </button>
+                                <button class="btn btn-danger btn-sm" id="btn-clear-locations">
+                                    <i data-lucide="trash-2"></i>
+                                    <span>Clear All</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Sample Data Scenarios Quick Seeder -->
+                        <div style="padding: 16px 24px; background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 0.82rem; font-weight: 600; color: #94a3b8;">ðŸ§ª Tamil Nadu Test Scenarios:</span>
+                                <span style="font-size: 0.78rem; color: #64748b;">(Loads realistic Tamil Nadu dispatch hubs with 1 warehouse + delivery stops)</span>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-secondary btn-sm btn-seed-scenario" data-scenario="chennai">
+                                    ðŸ™ï¸ Chennai Metro (12 Stops)
+                                </button>
+                                <button class="btn btn-secondary btn-sm btn-seed-scenario" data-scenario="coimbatore">
+                                    ðŸ­ Coimbatore Corridor (9 Stops)
+                                </button>
+                                <button class="btn btn-secondary btn-sm btn-seed-scenario" data-scenario="madurai">
+                                    ðŸ›ï¸ Madurai Express (8 Stops)
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Location Name</th>
+                                            <th>Customer / Contact</th>
+                                            <th>Coordinates (Lat, Lon)</th>
+                                            <th>Priority</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="locations-table-body">
+                                        <!-- Dynamically populated -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="locations-empty-state" style="display: none; text-align: center; padding: 48px 24px;">
+                                <div style="font-size: 2.5rem; margin-bottom: 12px;">ðŸ“</div>
+                                <h4 style="font-size: 1.1rem; color: #fff;">No Delivery Locations Registered</h4>
+                                <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px; margin-bottom: 16px;">
+                                    Add custom delivery addresses or click one of the preset city scenarios above.
+                                </p>
+                                <button class="btn btn-primary" onclick="LocationsManager.openAddModal()">
+                                    <i data-lucide="plus"></i> Add First Location
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= 3. OPTIMIZE ROUTE VIEW ================= -->
+                <section id="view-optimizer" class="view-section">
+                    <!-- GA Parameters Tuning Panel -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3><i data-lucide="sliders"></i> Genetic Algorithm Tuning & Configuration</h3>
+                                <p>Fine-tune population dynamics, selection pressures, crossover and mutation operators</p>
+                            </div>
+                            <span class="badge badge-standard">Permutation TSP Engine</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-row" style="margin-bottom: 20px;">
+                                <!-- Population Size -->
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        Population Size: <span class="slider-val" id="ga-pop-size-val">100</span>
+                                    </label>
+                                    <div class="slider-container">
+                                        <input type="range" id="ga-pop-size" min="20" max="300" step="10" value="100">
+                                    </div>
+                                    <span style="font-size: 0.72rem; color: #64748b;">Number of candidate routes evaluated per generation</span>
+                                </div>
+
+                                <!-- Number of Generations -->
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        Generations (Epochs): <span class="slider-val" id="ga-generations-val">150</span>
+                                    </label>
+                                    <div class="slider-container">
+                                        <input type="range" id="ga-generations" min="20" max="400" step="10" value="150">
+                                    </div>
+                                    <span style="font-size: 0.72rem; color: #64748b;">Evolutionary iteration cycles</span>
+                                </div>
+
+                                <!-- Mutation Rate -->
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        Mutation Rate: <span class="slider-val" id="ga-mutation-rate-val">0.15</span>
+                                    </label>
+                                    <div class="slider-container">
+                                        <input type="range" id="ga-mutation-rate" min="0.01" max="0.50" step="0.01" value="0.15">
+                                    </div>
+                                    <span style="font-size: 0.72rem; color: #64748b;">Probability of gene permutation perturbation</span>
+                                </div>
+
+                                <!-- Crossover Rate -->
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        Crossover Rate: <span class="slider-val" id="ga-crossover-rate-val">0.85</span>
+                                    </label>
+                                    <div class="slider-container">
+                                        <input type="range" id="ga-crossover-rate" min="0.50" max="1.00" step="0.05" value="0.85">
+                                    </div>
+                                    <span style="font-size: 0.72rem; color: #64748b;">Recombination frequency between parents</span>
+                                </div>
+                            </div>
+
+                            <div class="form-row" style="margin-bottom: 24px;">
+                                <!-- Selection Method -->
+                                <div class="form-group">
+                                    <label class="form-label">Selection Strategy</label>
+                                    <select class="form-select" id="ga-selection-method">
+                                        <option value="tournament" selected>Tournament Selection (k=5)</option>
+                                        <option value="roulette">Roulette Wheel (Fitness Proportionate)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Crossover Operator -->
+                                <div class="form-group">
+                                    <label class="form-label">Crossover Operator</label>
+                                    <select class="form-select" id="ga-crossover-method">
+                                        <option value="ox" selected>Ordered Crossover (OX)</option>
+                                        <option value="pmx">Partially Mapped Crossover (PMX)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Mutation Operator -->
+                                <div class="form-group">
+                                    <label class="form-label">Mutation Operator</label>
+                                    <select class="form-select" id="ga-mutation-method">
+                                        <option value="inversion" selected>Inversion Mutation (2-Opt Reversal)</option>
+                                        <option value="swap">Swap Mutation</option>
+                                        <option value="scramble">Scramble Mutation</option>
+                                    </select>
+                                </div>
+
+                                <!-- Street Road Network Model -->
+                                <div class="form-group" style="display: flex; flex-direction: column; justify-content: center;">
+                                    <label class="checkbox-label" style="margin-top: 18px;">
+                                        <input type="checkbox" id="ga-road-factor">
+                                        <span>Apply Urban Street Network Detour Factor (+28%)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Run Action & Progress -->
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+                                <div id="opt-progress-container" style="display: none; flex: 1; max-width: 480px;">
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #94a3b8; margin-bottom: 6px;">
+                                        <span id="opt-progress-text">Simulating Natural Selection...</span>
+                                    </div>
+                                    <div style="width: 100%; height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden;">
+                                        <div id="opt-progress-bar" style="width: 0%; height: 100%; background: var(--accent-gradient); transition: width 0.2s ease;"></div>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-primary" id="btn-run-optimization" style="font-size: 1rem; padding: 12px 28px;">
+                                    <i data-lucide="zap"></i>
+                                    <span>Run Genetic Optimization</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Post-Optimization Results Section (Hidden until run) -->
+                    <div id="opt-results-section" style="display: none;">
+                        <!-- Comparison Metrics Banner -->
+                        <div class="comparison-banner">
+                            <div class="comp-metric-box">
+                                <span class="label">Original Route</span>
+                                <span class="val" id="metric-orig-dist" style="color: #fda4af;">0.0 km</span>
+                                <span class="sub" id="metric-orig-time">0 min duration</span>
+                            </div>
+
+                            <div class="comp-divider">
+                                <i data-lucide="arrow-right" style="width: 32px; height: 32px;"></i>
+                            </div>
+
+                            <div class="comp-metric-box">
+                                <span class="label">Optimized Route</span>
+                                <span class="val" id="metric-opt-dist" style="color: #67e8f9;">0.0 km</span>
+                                <span class="sub" id="metric-opt-time">0 min duration</span>
+                            </div>
+
+                            <div class="comp-savings-card">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <span style="font-size: 0.78rem; font-weight: 700; color: #10b981; text-transform: uppercase;">Distance Saved</span>
+                                        <div class="savings-highlight" id="metric-saved-dist">-0.0 km</div>
+                                        <div style="font-size: 0.85rem; font-weight: 700; color: #10b981;" id="metric-saved-time">0 min saved</div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <span class="badge badge-success" id="metric-improvement-pct" style="font-size: 1.1rem; padding: 6px 14px;">0%</span>
+                                        <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 6px;">Runtime: <b id="metric-runtime">0.0s</b></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Grid: Convergence Plot & Comparison Chart -->
+                        <div class="charts-grid">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div>
+                                        <h3><i data-lucide="trending-down"></i> GA Fitness Convergence Curve</h3>
+                                        <p>Best fitness distance vs average population distance across generations</p>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-card-body">
+                                        <canvas id="chart-convergence"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <div>
+                                        <h3><i data-lucide="bar-chart"></i> Travel Distance & Duration Comparison</h3>
+                                        <p>Side-by-side benchmark between original input order and optimized sequence</p>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-card-body">
+                                        <canvas id="chart-comparison"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Turn-by-Turn Waypoint Sequence -->
+                        <div class="card">
+                            <div class="card-header">
+                                <div>
+                                    <h3><i data-lucide="list-ordered"></i> Optimized Delivery Waypoint Sequence</h3>
+                                    <p>Optimal visited order starting from depot, serving all customers, and returning</p>
+                                </div>
+                                <button class="btn btn-primary btn-sm" id="btn-view-opt-map">
+                                    <i data-lucide="map"></i>
+                                    <span>View on Route Map</span>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="stops-sequence-list" id="opt-stops-list">
+                                    <!-- Dynamically populated -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= 4. ROUTE MAP VIEW ================= -->
+                <section id="view-map" class="view-section">
+                    <div class="map-view-wrapper">
+                        <!-- Interactive Leaflet Map Container -->
+                        <div class="map-card">
+                            <div id="leaflet-map"></div>
+
+                            <!-- Map Overlays Controls -->
+                            <div class="map-overlay-controls">
+                                <span style="font-size: 0.72rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Layers & Display</span>
+                                <label class="checkbox-label" style="font-size: 0.76rem;">
+                                    <input type="checkbox" class="map-layer-toggle" data-layer="warehouse" checked>
+                                    <span>Depot Warehouse</span>
+                                </label>
+                                <label class="checkbox-label" style="font-size: 0.76rem;">
+                                    <input type="checkbox" class="map-layer-toggle" data-layer="stops" checked>
+                                    <span>Numbered Stops</span>
+                                </label>
+                                <label class="checkbox-label" style="font-size: 0.76rem;">
+                                    <input type="checkbox" class="map-layer-toggle" data-layer="original" checked>
+                                    <span style="color: #f43f5e;">Original Tour</span>
+                                </label>
+                                <label class="checkbox-label" style="font-size: 0.76rem;">
+                                    <input type="checkbox" class="map-layer-toggle" data-layer="optimized" checked>
+                                    <span style="color: #06b6d4;">GA Optimized Tour</span>
+                                </label>
+                                <button class="btn btn-secondary btn-sm" id="btn-map-fit-bounds" style="margin-top: 6px;">
+                                    <i data-lucide="maximize"></i> Zoom to Fit Tour
+                                </button>
+                                <button class="btn btn-secondary btn-sm" onclick="MapManager.resetToCenter()">
+                                    <i data-lucide="compass"></i> Center Tamil Nadu
+                                </button>
+                            </div>
+
+                            <!-- Map Legend -->
+                            <div class="map-legend">
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background: #f43f5e;"></span>
+                                    <span>Warehouse Depot</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background: #06b6d4;"></span>
+                                    <span>Delivery Destination</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-line" style="background: #f43f5e; border-top: 2px dashed #f43f5e;"></span>
+                                    <span>Original Route</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-line" style="background: #06b6d4;"></span>
+                                    <span>Optimized Route</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Waypoints Sidebar Drawer -->
+                        <div class="map-sidebar-drawer">
+                            <div class="map-sidebar-header">
+                                <h3 style="font-size: 0.95rem; font-weight: 700;"><i data-lucide="navigation"></i> Waypoint Sequence</h3>
+                                <p style="font-size: 0.76rem; color: #94a3b8;">Click any waypoint to inspect destination details</p>
+                            </div>
+                            <div class="stops-sequence-list" id="map-stops-drawer">
+                                <div style="text-align: center; color: #64748b; padding: 32px 16px; font-size: 0.85rem;">
+                                    Run an optimization or select sample points to display active itinerary.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= 5. REPORTS VIEW ================= -->
+                <section id="view-reports" class="view-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3><i data-lucide="file-text"></i> Route Optimization History & Reports</h3>
+                                <p>Comprehensive archive of all dispatch runs, execution statistics, and exports</p>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" id="btn-export-summary-csv">
+                                <i data-lucide="download"></i>
+                                <span>Export Full CSV Summary</span>
+                            </button>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Run Details</th>
+                                            <th>Stops</th>
+                                            <th>Original</th>
+                                            <th>Optimized</th>
+                                            <th>Distance Saved</th>
+                                            <th>Time Saved</th>
+                                            <th>Export</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="reports-table-body">
+                                        <!-- Dynamically populated -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="reports-empty-state" style="display: none; text-align: center; padding: 48px 24px;">
+                                <div style="font-size: 2.5rem; margin-bottom: 12px;">ðŸ“‘</div>
+                                <h4 style="font-size: 1.1rem; color: #fff;">No Optimization Reports Yet</h4>
+                                <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">
+                                    Optimizations will automatically generate downloadable dispatch reports here.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= 6. SETTINGS VIEW ================= -->
+                <section id="view-settings" class="view-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3><i data-lucide="settings"></i> Application & Algorithm Settings</h3>
+                                <p>System hyperparameters, vehicle telemetry constants, and academic documentation</p>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 16px;">Vehicle Fleet & Delivery Simulation Parameters</h4>
+                            <div class="form-row" style="margin-bottom: 24px;">
+                                <div class="form-group">
+                                    <label class="form-label">Average Fleet Speed (km/h)</label>
+                                    <input type="number" class="form-control" id="set-fleet-speed" value="35.0" step="1.0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Service Time per Stop (minutes)</label>
+                                    <input type="number" class="form-control" id="set-service-time" value="8.0" step="0.5">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">COâ‚‚ Emission Factor (kg/km)</label>
+                                    <input type="number" class="form-control" id="set-co2-factor" value="0.192" step="0.001">
+                                </div>
+                            </div>
+
+                            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 24px 0;">
+
+                            <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 12px;">Academic Project Information</h4>
+                            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px 20px;">
+                                <div style="font-weight: 700; color: #06b6d4; font-size: 1rem; margin-bottom: 4px;">
+                                    RouteGen: Smart Last-Mile Delivery Route Optimizer
+                                </div>
+                                <div style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.6;">
+                                    <b>Problem Formulation:</b> Multi-Stop Traveling Salesperson Problem (TSP) with Fixed Depot Constraint.<br>
+                                    <b>Distance Computation:</b> Great-circle distance calculated via spherical trigonometry (Haversine formula), augmented by urban Manhattan grid network coefficients.<br>
+                                    <b>Meta-Heuristic Optimization:</b> Permutation Genetic Algorithm utilizing Ordered Crossover (OX), 2-Opt Inversion Mutation, and Elitist Selection.<br>
+                                    <b>Backend & Storage:</b> Python Flask + SQLite with relational persistence of users, locations, and generational convergence telemetry.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ================= ADD / EDIT LOCATION MODAL ================= -->
+    <div class="modal-backdrop" id="modal-location">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-location-title" style="font-size: 1.1rem; font-weight: 700;">Add Delivery Destination</h3>
+                <button class="btn-close btn-close-modal"><i data-lucide="x"></i></button>
+            </div>
+            <form id="location-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Location / Drop Name *</label>
+                        <input type="text" class="form-control" id="loc-name" placeholder="e.g. T. Nagar Commercial Hub or Koyambedu Depot" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Latitude (-90 to 90) *</label>
+                            <input type="number" step="any" class="form-control" id="loc-lat" placeholder="13.0418" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Longitude (-180 to 180) *</label>
+                            <input type="number" step="any" class="form-control" id="loc-lng" placeholder="80.2341" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Customer Name</label>
+                            <input type="text" class="form-control" id="loc-customer-name" placeholder="e.g. Pothys Silks Ltd">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Contact Phone</label>
+                            <input type="text" class="form-control" id="loc-customer-phone" placeholder="+91 44 2431 0120">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Street Address</label>
+                        <input type="text" class="form-control" id="loc-customer-address" placeholder="Usman Road, T. Nagar, Chennai, Tamil Nadu">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Delivery Priority</label>
+                            <select class="form-select" id="loc-priority">
+                                <option value="Standard" selected>Standard</option>
+                                <option value="High">High</option>
+                                <option value="Urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: center; margin-top: 24px;">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="loc-is-warehouse">
+                                <span style="font-weight: 700; color: #f43f5e;">Set as Warehouse Depot (Depot Start/Return)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Delivery Notes / Instructions</label>
+                        <textarea class="form-control" id="loc-notes" rows="2" placeholder="e.g. Deliver before 11 AM, loading dock on 44th St"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-close-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Destination</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= AUTHENTICATION MODAL ================= -->
+    <div class="modal-backdrop" id="modal-auth">
+        <div class="modal-content" style="max-width: 460px;">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="brand-icon" style="width: 36px; height: 36px;">
+                        <i data-lucide="shield-check" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">Dispatcher Portal</h3>
+                        <p style="font-size: 0.78rem; color: #94a3b8; margin: 0;">Sign in to access RouteGen optimizer</p>
+                    </div>
+                </div>
+                <!-- Only allow closing if user is already logged in -->
+                <button class="btn-close btn-close-modal" id="btn-close-auth-modal" style="display: none;">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <!-- Tab Switcher (Sign In / Register) -->
+            <div style="display: flex; border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.02);">
+                <button id="tab-auth-login" type="button" style="flex: 1; padding: 14px; border: none; border-bottom: 2px solid var(--primary-cyan); background: transparent; color: #fff; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                    ðŸ”‘ Manual Sign In
+                </button>
+                <button id="tab-auth-register" type="button" style="flex: 1; padding: 14px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                    ðŸ“ Register Account
+                </button>
+            </div>
+
+            <div class="modal-body" style="padding: 24px;">
+                <!-- Manual Sign In Form -->
+                <form id="login-form">
+                    <div id="login-error-alert" class="auth-alert error" style="display: none;"></div>
+
+                    <div class="form-group">
+                        <label class="form-label">Username or Registered Email *</label>
+                        <div style="position: relative;">
+                            <input type="text" class="form-control" id="login-identifier" placeholder="Enter username or email" required autocomplete="username">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label class="form-label" style="margin-bottom: 0;">Password *</label>
+                            <button type="button" id="btn-toggle-login-pwd" style="background: none; border: none; color: #38bdf8; font-size: 0.75rem; cursor: pointer; font-weight: 600;">
+                                Show Password
+                            </button>
+                        </div>
+                        <input type="password" class="form-control" id="login-password" placeholder="Enter your password" required autocomplete="current-password">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="btn-submit-login" style="width: 100%; padding: 12px; font-size: 0.95rem; margin-top: 10px;">
+                        <span>Sign In</span>
+                        <i data-lucide="arrow-right"></i>
+                    </button>
+                </form>
+
+                <!-- Manual Registration Form -->
+                <form id="register-form" style="display: none;">
+                    <div id="register-error-alert" class="auth-alert error" style="display: none;"></div>
+
+                    <div class="form-group">
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" class="form-control" id="reg-fullname" placeholder="e.g. Sundar Pichai" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Choose Username *</label>
+                            <input type="text" class="form-control" id="reg-username" placeholder="e.g. sundar_tn" required minlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email Address *</label>
+                            <input type="email" class="form-control" id="reg-email" placeholder="sundar@logistics.in" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Logistics Company / Fleet Name</label>
+                        <input type="text" class="form-control" id="reg-company" placeholder="e.g. Tamil Nadu Express Logistics">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Password (min 6 chars) *</label>
+                            <input type="password" class="form-control" id="reg-password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Confirm Password *</label>
+                            <input type="password" class="form-control" id="reg-confirm-password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required minlength="6">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success" id="btn-submit-register" style="width: 100%; padding: 12px; font-size: 0.95rem; margin-top: 10px;">
+                        <span>Create Dispatcher Account</span>
+                        <i data-lucide="user-plus"></i>
+                    </button>
+                </form>
+
+                <!-- Optional Helper / Fill Demo Credentials -->
+                <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-color); text-align: center;">
+                    <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 8px;">
+                        Want to test with sample credentials?
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-fill-demo-creds" style="font-size: 0.78rem; width: 100%;">
+                        Fill Demo Credentials (demo_dispatcher)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Custom Modules -->
+    <script src="./frontend/static/js/ga_engine.js"></script>
+    <script src="./frontend/static/js/charts.js"></script>
+    <script src="./frontend/static/js/map.js"></script>
+    <script src="./frontend/static/js/locations.js"></script>
+    <script src="./frontend/static/js/optimizer.js"></script>
+    <script src="./frontend/static/js/reports.js"></script>
+    <script src="./frontend/static/js/app.js"></script>
+
+</body>
+</html>
+

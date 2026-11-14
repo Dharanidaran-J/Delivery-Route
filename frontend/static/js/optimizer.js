@@ -1,6 +1,7 @@
 /**
  * RouteGen - Optimization Module
  * Controls Genetic Algorithm Hyperparameters, execution, convergence tracking & route comparison
+ * Supports both Flask Backend API and Client-Side GA Engine (GitHub Pages)
  */
 
 const OptimizerManager = {
@@ -13,7 +14,6 @@ const OptimizerManager = {
     },
 
     bindSliderInputs: function() {
-        // Sync sliders with value labels
         const bindSlider = (sliderId, labelId, formatFn = val => val) => {
             const slider = document.getElementById(sliderId);
             const label = document.getElementById(labelId);
@@ -64,7 +64,6 @@ const OptimizerManager = {
         const crossoverMethod = document.getElementById('ga-crossover-method').value;
         const mutationMethod = document.getElementById('ga-mutation-method').value;
         const useRoadMultiplier = document.getElementById('ga-road-factor')?.checked || false;
-        const fetchRoadGeometry = document.getElementById('ga-osrm-geom')?.checked || true;
 
         const btnRun = document.getElementById('btn-run-optimization');
         const progressContainer = document.getElementById('opt-progress-container');
@@ -76,61 +75,92 @@ const OptimizerManager = {
         btnRun.innerHTML = `<span>⏳ Optimizing Tour...</span>`;
         if (progressContainer) progressContainer.style.display = 'block';
 
-        // Animate simulated progress bar while algorithm runs
         let progress = 10;
         const interval = setInterval(() => {
             progress = Math.min(progress + 15, 90);
             if (progressBar) progressBar.style.width = `${progress}%`;
             if (progressText) progressText.innerText = `Simulating Natural Selection... Generation ${Math.floor((progress / 100) * generations)} of ${generations}`;
-        }, 120);
+        }, 100);
+
+        const options = {
+            population_size: popSize,
+            generations: generations,
+            mutation_rate: mutationRate,
+            crossover_rate: crossoverRate,
+            selection_method: selectionMethod,
+            crossover_method: crossoverMethod,
+            mutation_method: mutationMethod,
+            use_road_multiplier: useRoadMultiplier
+        };
 
         try {
             const res = await fetch('/api/optimize', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    population_size: popSize,
-                    generations: generations,
-                    mutation_rate: mutationRate,
-                    crossover_rate: crossoverRate,
-                    selection_method: selectionMethod,
-                    crossover_method: crossoverMethod,
-                    mutation_method: mutationMethod,
-                    use_road_multiplier: useRoadMultiplier,
-                    fetch_road_geometry: fetchRoadGeometry
-                })
+                body: JSON.stringify(options)
             });
 
-            clearInterval(interval);
-            if (progressBar) progressBar.style.width = '100%';
-            if (progressText) progressText.innerText = 'Optimal Tour Converged!';
-
-            const data = await res.json();
-            if (data.success) {
-                this.lastOptimizationResult = data;
-                App.showToast(`Route optimized successfully! Distance saved: ${data.summary.distance_saved_km} km (${data.summary.improvement_percentage}%)`, "success");
-                
-                // Render results
-                this.displayResults(data);
-                
-                // Refresh dashboard stats in background
-                App.loadDashboardStats();
-            } else {
-                App.showToast(data.error || "Optimization failed", "error");
+            if (res && res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    this.handleOptimizationSuccess(data, interval, progressBar, progressText);
+                    return;
+                }
             }
         } catch (err) {
+            // Client-Side Genetic Algorithm Fallback (for GitHub Pages static host)
+        }
+
+        // Run in Client-Side GA Engine
+        const warehouse = LocationsManager.warehouse || LocationsManager.locations.find(l => l.is_warehouse === 1);
+        const deliveries = LocationsManager.locations.filter(l => l.is_warehouse === 0);
+
+        if (!warehouse) {
             clearInterval(interval);
-            console.error(err);
-            App.showToast("Server error during optimization execution", "error");
-        } finally {
-            this.isOptimizing = false;
+            App.showToast("No Warehouse Depot found! Please set one location as Warehouse.", "error");
+            this.resetOptUI(btnRun, progressContainer, progressBar);
+            return;
+        }
+
+        if (deliveries.length < 2) {
+            clearInterval(interval);
+            App.showToast("Optimization requires at least 2 delivery stops.", "error");
+            this.resetOptUI(btnRun, progressContainer, progressBar);
+            return;
+        }
+
+        // Execute JS Genetic Algorithm
+        const result = GAClientEngine.run(warehouse, deliveries, options);
+        StaticStorage.saveOptimization(result);
+        this.handleOptimizationSuccess(result, interval, progressBar, progressText);
+    },
+
+    handleOptimizationSuccess: function(data, interval, progressBar, progressText) {
+        clearInterval(interval);
+        if (progressBar) progressBar.style.width = '100%';
+        if (progressText) progressText.innerText = 'Optimal Tour Converged!';
+
+        this.lastOptimizationResult = data;
+        App.showToast(`Route optimized successfully! Saved: ${data.summary.distance_saved_km} km (${data.summary.improvement_percentage}%)`, "success");
+        
+        this.displayResults(data);
+        App.loadDashboardStats();
+
+        const btnRun = document.getElementById('btn-run-optimization');
+        const progressContainer = document.getElementById('opt-progress-container');
+        this.resetOptUI(btnRun, progressContainer, progressBar);
+    },
+
+    resetOptUI: function(btnRun, progressContainer, progressBar) {
+        this.isOptimizing = false;
+        if (btnRun) {
             btnRun.disabled = false;
             btnRun.innerHTML = `<span>⚡ Run Genetic Optimization</span>`;
-            setTimeout(() => {
-                if (progressContainer) progressContainer.style.display = 'none';
-                if (progressBar) progressBar.style.width = '0%';
-            }, 800);
         }
+        setTimeout(() => {
+            if (progressContainer) progressContainer.style.display = 'none';
+            if (progressBar) progressBar.style.width = '0%';
+        }, 600);
     },
 
     displayResults: function(data) {

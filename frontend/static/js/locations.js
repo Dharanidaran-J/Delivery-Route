@@ -1,6 +1,7 @@
 /**
  * RouteGen - Location Management Module
  * Handles CRUD operations, coordinate picking, and scenario seeding
+ * Supports both Flask Backend API and Static GitHub Pages Storage
  */
 
 const LocationsManager = {
@@ -53,20 +54,30 @@ const LocationsManager = {
     loadLocations: async function() {
         try {
             const res = await fetch('/api/locations');
-            const data = await res.json();
-            if (data.success) {
-                this.locations = data.all_locations || [];
-                this.warehouse = data.warehouse;
-                this.renderLocationsTable();
-                
-                // Update map if on Map view
-                if (document.getElementById('view-map').classList.contains('active')) {
-                    MapManager.renderLocations(this.warehouse, data.deliveries);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    this.locations = data.all_locations || [];
+                    this.warehouse = data.warehouse;
+                    this.renderLocationsTable();
+                    if (document.getElementById('view-map').classList.contains('active')) {
+                        MapManager.renderLocations(this.warehouse, data.deliveries);
+                    }
+                    return;
                 }
             }
         } catch (err) {
-            console.error("Error loading locations:", err);
-            App.showToast("Failed to load delivery locations", "error");
+            // Static mode fallback (GitHub Pages)
+        }
+
+        // Client-Side LocalStorage Fallback
+        const all = StaticStorage.getLocations();
+        this.locations = all;
+        this.warehouse = all.find(l => l.is_warehouse === 1) || null;
+        const deliveries = all.filter(l => l.is_warehouse === 0);
+        this.renderLocationsTable();
+        if (document.getElementById('view-map').classList.contains('active')) {
+            MapManager.renderLocations(this.warehouse, deliveries);
         }
     },
 
@@ -183,7 +194,7 @@ const LocationsManager = {
         const customer_address = document.getElementById('loc-customer-address').value.trim();
         const priority = document.getElementById('loc-priority').value;
         const notes = document.getElementById('loc-notes').value.trim();
-        const is_warehouse = document.getElementById('loc-is-warehouse').checked;
+        const is_warehouse = document.getElementById('loc-is-warehouse').checked ? 1 : 0;
 
         if (!name) {
             App.showToast("Please enter a location name", "error");
@@ -201,6 +212,7 @@ const LocationsManager = {
         }
 
         const payload = {
+            id: this.editingLocationId || Date.now(),
             name,
             latitude: lat,
             longitude: lng,
@@ -228,18 +240,38 @@ const LocationsManager = {
                 });
             }
 
-            const data = await res.json();
-            if (data.success) {
-                App.showToast(data.message, "success");
-                App.closeModal('modal-location');
-                this.loadLocations();
-            } else {
-                App.showToast(data.error || "Failed to save location", "error");
+            if (res && res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    App.showToast(data.message, "success");
+                    App.closeModal('modal-location');
+                    this.loadLocations();
+                    return;
+                }
             }
         } catch (err) {
-            console.error(err);
-            App.showToast("Network error while saving location", "error");
+            // Client-side fallback
         }
+
+        // Static mode update
+        let list = StaticStorage.getLocations();
+        if (is_warehouse === 1) {
+            list.forEach(l => l.is_warehouse = 0);
+        }
+
+        if (this.editingLocationId) {
+            const idx = list.findIndex(l => l.id === this.editingLocationId);
+            if (idx !== -1) {
+                list[idx] = { ...list[idx], ...payload };
+            }
+        } else {
+            list.push(payload);
+        }
+
+        StaticStorage.saveLocations(list);
+        App.showToast("Destination saved successfully!", "success");
+        App.closeModal('modal-location');
+        this.loadLocations();
     },
 
     deleteLocation: async function(id) {
@@ -247,31 +279,44 @@ const LocationsManager = {
 
         try {
             const res = await fetch(`/api/locations/${id}`, { method: 'DELETE' });
-            const data = await res.json();
-            if (data.success) {
-                App.showToast(data.message, "success");
-                this.loadLocations();
-            } else {
-                App.showToast(data.error || "Failed to delete location", "error");
+            if (res && res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    App.showToast(data.message, "success");
+                    this.loadLocations();
+                    return;
+                }
             }
-        } catch (err) {
-            App.showToast("Error deleting location", "error");
-        }
+        } catch (err) {}
+
+        // Static fallback
+        let list = StaticStorage.getLocations().filter(l => l.id !== id);
+        StaticStorage.saveLocations(list);
+        App.showToast("Location removed", "success");
+        this.loadLocations();
     },
 
     setWarehouse: async function(id) {
         try {
             const res = await fetch(`/api/locations/${id}/set-warehouse`, { method: 'POST' });
-            const data = await res.json();
-            if (data.success) {
-                App.showToast(data.message, "success");
-                this.loadLocations();
-            } else {
-                App.showToast(data.error || "Failed to set warehouse", "error");
+            if (res && res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    App.showToast(data.message, "success");
+                    this.loadLocations();
+                    return;
+                }
             }
-        } catch (err) {
-            App.showToast("Error updating warehouse", "error");
-        }
+        } catch (err) {}
+
+        // Static fallback
+        let list = StaticStorage.getLocations();
+        list.forEach(l => {
+            l.is_warehouse = (l.id === id) ? 1 : 0;
+        });
+        StaticStorage.saveLocations(list);
+        App.showToast("Warehouse depot updated!", "success");
+        this.loadLocations();
     },
 
     seedScenario: async function(scenarioKey) {
@@ -282,29 +327,38 @@ const LocationsManager = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ scenario: scenarioKey })
             });
-            const data = await res.json();
-            if (data.success) {
-                App.showToast(data.message, "success");
-                this.loadLocations();
-            } else {
-                App.showToast(data.error || "Failed to load scenario", "error");
+            if (res && res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    App.showToast(data.message, "success");
+                    this.loadLocations();
+                    return;
+                }
             }
-        } catch (err) {
-            App.showToast("Error loading sample scenario", "error");
-        }
+        } catch (err) {}
+
+        // Static fallback
+        const sc = StaticStorage.TAMIL_NADU_SCENARIOS[scenarioKey] || StaticStorage.TAMIL_NADU_SCENARIOS.chennai;
+        const list = [sc.warehouse, ...sc.deliveries];
+        StaticStorage.saveLocations(list);
+        App.showToast(`Loaded '${sc.title}' with 1 warehouse + ${sc.deliveries.length} stops!`, "success");
+        this.loadLocations();
     },
 
     clearAll: async function() {
         try {
             const res = await fetch('/api/locations/clear-all', { method: 'DELETE' });
-            const data = await res.json();
-            if (data.success) {
-                App.showToast(data.message, "info");
+            if (res && res.ok) {
+                App.showToast("Locations cleared", "info");
                 this.loadLocations();
+                return;
             }
-        } catch (err) {
-            App.showToast("Error clearing locations", "error");
-        }
+        } catch (err) {}
+
+        // Static fallback
+        StaticStorage.saveLocations([]);
+        App.showToast("All locations cleared", "info");
+        this.loadLocations();
     },
 
     startCoordinatePicker: function() {
@@ -314,7 +368,6 @@ const LocationsManager = {
 
         MapManager.activateCoordinatePicker((lat, lng) => {
             MapManager.deactivateCoordinatePicker();
-            // Re-open modal and populate
             this.openAddModal();
             document.getElementById('loc-lat').value = lat.toFixed(6);
             document.getElementById('loc-lng').value = lng.toFixed(6);

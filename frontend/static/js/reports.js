@@ -1,6 +1,7 @@
 /**
  * RouteGen - Reports & Export Module
  * Generates downloadable CSV exports and formatted academic PDF reports
+ * Supports both Flask Backend API and Client-Side Export (GitHub Pages)
  */
 
 const ReportsManager = {
@@ -15,7 +16,7 @@ const ReportsManager = {
         const btnExportSummary = document.getElementById('btn-export-summary-csv');
         if (btnExportSummary) {
             btnExportSummary.addEventListener('click', () => {
-                window.location.href = '/api/reports/summary-csv';
+                this.exportSummaryCSV();
             });
         }
     },
@@ -23,14 +24,31 @@ const ReportsManager = {
     loadHistory: async function() {
         try {
             const res = await fetch('/api/optimize/history');
-            const data = await res.json();
-            if (data.success) {
-                this.optimizations = data.optimizations || [];
-                this.renderHistoryTable();
+            if (res && res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    this.optimizations = data.optimizations || [];
+                    this.renderHistoryTable();
+                    return;
+                }
             }
-        } catch (err) {
-            console.error("Error loading history:", err);
-        }
+        } catch (err) {}
+
+        // Static mode fallback
+        const list = StaticStorage.getOptimizations();
+        this.optimizations = list.map(item => ({
+            id: item.optimization_id,
+            title: item.title,
+            num_locations: item.summary.num_deliveries,
+            original_distance_km: item.summary.original_distance_km,
+            optimized_distance_km: item.summary.optimized_distance_km,
+            distance_saved_km: item.summary.distance_saved_km,
+            improvement_percentage: item.summary.improvement_percentage,
+            time_saved_minutes: item.summary.time_saved_minutes,
+            created_at: new Date(item.optimization_id).toLocaleDateString(),
+            raw: item
+        }));
+        this.renderHistoryTable();
     },
 
     renderHistoryTable: function() {
@@ -83,56 +101,158 @@ const ReportsManager = {
     },
 
     viewOptimization: async function(optId) {
+        let optData = null;
         try {
             App.showToast("Loading route data...", "info");
             const res = await fetch(`/api/optimize/${optId}`);
-            const data = await res.json();
-            if (data.success) {
-                const opt = data.optimization;
-                App.switchTab('map');
-                
-                // Construct stops for map rendering
-                const stops = opt.stops || opt.route_sequence || [];
-                MapManager.renderOptimizedRoutes([], stops);
-                App.showToast(`Showing Optimization #${optId} on Map`, "success");
+            if (res && res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    optData = data.optimization;
+                }
             }
-        } catch (err) {
-            App.showToast("Error loading optimization details", "error");
+        } catch (err) {}
+
+        if (!optData) {
+            // Find in static storage
+            const list = StaticStorage.getOptimizations();
+            const found = list.find(x => x.optimization_id === optId);
+            if (found) {
+                optData = {
+                    stops: found.optimized_route,
+                    route_sequence: found.optimized_route
+                };
+            }
+        }
+
+        if (optData) {
+            App.switchTab('map');
+            const stops = optData.stops || optData.route_sequence || [];
+            MapManager.renderOptimizedRoutes([], stops);
+            App.showToast(`Showing Optimization #${optId} on Map`, "success");
+        } else {
+            App.showToast("Optimization details not found", "error");
         }
     },
 
-    downloadCSV: function(optId) {
-        window.location.href = `/api/reports/csv/${optId}`;
+    downloadCSV: async function(optId) {
+        try {
+            // Check if backend responds
+            const res = await fetch(`/api/reports/csv/${optId}`);
+            if (res && res.ok) {
+                window.location.href = `/api/reports/csv/${optId}`;
+                return;
+            }
+        } catch (err) {}
+
+        // Static Client-side CSV generation
+        const list = StaticStorage.getOptimizations();
+        const found = list.find(x => x.optimization_id === optId);
+        if (!found) {
+            App.showToast("Report record not found for CSV export", "error");
+            return;
+        }
+
+        let csv = "RouteGen Delivery Optimization Report\n";
+        csv += `Optimization ID,${found.optimization_id}\n`;
+        csv += `Title,"${found.title}"\n`;
+        csv += `Stops,${found.summary.num_deliveries}\n`;
+        csv += `Original Distance (km),${found.summary.original_distance_km}\n`;
+        csv += `Optimized Distance (km),${found.summary.optimized_distance_km}\n`;
+        csv += `Distance Saved (km),${found.summary.distance_saved_km}\n`;
+        csv += `Improvement (%),${found.summary.improvement_percentage}%\n\n`;
+
+        csv += "Stop Order,Location Name,Customer Name,Latitude,Longitude,Leg Distance (km),Cumulative Distance (km),Est. Arrival (min)\n";
+        found.optimized_route.forEach(s => {
+            csv += `${s.stop_order},"${s.name}","${s.customer_name || 'N/A'}",${s.latitude},${s.longitude},${s.distance_from_prev_km},${s.cumulative_distance_km},${s.estimated_arrival_minutes}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `RouteGen_Optimization_${optId}.csv`;
+        link.click();
+        App.showToast("CSV report downloaded", "success");
+    },
+
+    exportSummaryCSV: function() {
+        const list = StaticStorage.getOptimizations();
+        if (list.length === 0) {
+            window.location.href = '/api/reports/summary-csv';
+            return;
+        }
+
+        let csv = "ID,Title,Locations,Original Dist (km),Optimized Dist (km),Saved Dist (km),Improvement (%)\n";
+        list.forEach(o => {
+            csv += `${o.optimization_id},"${o.title}",${o.summary.num_deliveries},${o.summary.original_distance_km},${o.summary.optimized_distance_km},${o.summary.distance_saved_km},${o.summary.improvement_percentage}%\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "RouteGen_Historical_Summary.csv";
+        link.click();
+        App.showToast("Summary CSV downloaded", "success");
     },
 
     downloadPDF: async function(optId) {
         try {
             App.showToast("Compiling PDF Dispatch Report...", "info");
-            const res = await fetch(`/api/optimize/${optId}`);
-            const data = await res.json();
-            if (!data.success) {
+            let opt = null;
+            let stops = [];
+
+            try {
+                const res = await fetch(`/api/optimize/${optId}`);
+                if (res && res.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        opt = data.optimization;
+                        stops = opt.stops || [];
+                    }
+                }
+            } catch (e) {}
+
+            if (!opt) {
+                const list = StaticStorage.getOptimizations();
+                const found = list.find(x => x.optimization_id === optId);
+                if (found) {
+                    opt = {
+                        id: found.optimization_id,
+                        title: found.title,
+                        created_at: new Date(found.optimization_id).toLocaleString(),
+                        num_locations: found.summary.num_deliveries,
+                        original_distance_km: found.summary.original_distance_km,
+                        optimized_distance_km: found.summary.optimized_distance_km,
+                        distance_saved_km: found.summary.distance_saved_km,
+                        improvement_percentage: found.summary.improvement_percentage,
+                        original_time_minutes: found.summary.original_time_minutes,
+                        optimized_time_minutes: found.summary.optimized_time_minutes,
+                        time_saved_minutes: found.summary.time_saved_minutes,
+                        population_size: found.summary.parameters.population_size,
+                        generations: found.summary.parameters.generations,
+                        mutation_rate: found.summary.parameters.mutation_rate,
+                        crossover_rate: found.summary.parameters.crossover_rate,
+                        execution_time_seconds: found.summary.execution_time_seconds
+                    };
+                    stops = found.optimized_route || [];
+                }
+            }
+
+            if (!opt) {
                 App.showToast("Failed to fetch optimization data for PDF", "error");
                 return;
             }
 
-            const opt = data.optimization;
-            const stops = opt.stops || [];
-
-            // Check if jsPDF is available
             const { jsPDF } = window.jspdf || {};
             if (!jsPDF) {
                 App.showToast("PDF Engine loading. Please retry in a moment.", "warning");
                 return;
             }
 
-            const doc = new jsPDF({
-                orientation: 'portrait',
-                unit: 'pt',
-                format: 'a4'
-            });
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
 
             // 1. Header & Title Banner
-            doc.setFillColor(15, 28, 50); // Navy Dark Banner
+            doc.setFillColor(15, 28, 50);
             doc.rect(0, 0, 595, 80, 'F');
 
             doc.setTextColor(255, 255, 255);
@@ -142,7 +262,7 @@ const ReportsManager = {
 
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            doc.setTextColor(6, 182, 212); // Cyan accent
+            doc.setTextColor(6, 182, 212);
             doc.text("Powered by Genetic Algorithm (Traveling Salesperson Problem Engine)", 30, 60);
 
             // 2. Metadata Section
@@ -187,7 +307,7 @@ const ReportsManager = {
 
             const tableRows = stops.map(s => [
                 s.stop_order === 0 ? 'START' : s.stop_order,
-                s.location_name,
+                s.name || s.location_name,
                 s.customer_name || 'N/A',
                 `${s.latitude.toFixed(4)}, ${s.longitude.toFixed(4)}`,
                 `${s.distance_from_prev_km.toFixed(2)} km`,
@@ -218,7 +338,6 @@ const ReportsManager = {
                 );
             }
 
-            // Save PDF
             doc.save(`RouteGen_Optimization_Report_${optId}.pdf`);
             App.showToast("PDF report successfully generated!", "success");
 
