@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RouteGen – Smart Delivery Route Optimizer</title>
+    <title>RouteGen - Smart Delivery Route Optimizer</title>
 
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -153,7 +153,9 @@
                     <div class="card" style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 182, 212, 0.05) 100%);">
                         <div class="card-body" style="padding: 18px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
                             <div style="display: flex; align-items: center; gap: 14px;">
-                                <div style="font-size: 1.8rem;">🌱</div>
+                                <div class="stat-icon" style="width: 44px; height: 44px; background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                                    <i data-lucide="leaf" style="width: 22px; height: 22px;"></i>
+                                </div>
                                 <div>
                                     <div style="font-size: 0.95rem; font-weight: 700; color: #fff;">Sustainability & Fuel Efficiency Impact</div>
                                     <div style="font-size: 0.78rem; color: #94a3b8;">Real ecological savings calculated from Haversine TSP optimization</div>
@@ -161,7 +163,7 @@
                             </div>
                             <div style="display: flex; gap: 28px;">
                                 <div>
-                                    <div style="font-size: 0.76rem; color: #94a3b8; text-transform: uppercase;">CO₂ Emissions Avoided</div>
+                                    <div style="font-size: 0.76rem; color: #94a3b8; text-transform: uppercase;">CO2 Emissions Avoided</div>
                                     <div style="font-size: 1.3rem; font-weight: 800; color: #10b981;" id="stat-co2-saved">0.0 kg</div>
                                 </div>
                                 <div>
@@ -248,18 +250,23 @@
                         <!-- Sample Data Scenarios Quick Seeder -->
                         <div style="padding: 16px 24px; background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 0.82rem; font-weight: 600; color: #94a3b8;">🧪 Tamil Nadu Test Scenarios:</span>
+                                <span style="font-size: 0.82rem; font-weight: 600; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
+                                    <i data-lucide="map" style="width: 16px; height: 16px; color: #06b6d4;"></i> Tamil Nadu Test Scenarios:
+                                </span>
                                 <span style="font-size: 0.78rem; color: #64748b;">(Loads realistic Tamil Nadu dispatch hubs with 1 warehouse + delivery stops)</span>
                             </div>
                             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                                 <button class="btn btn-secondary btn-sm btn-seed-scenario" data-scenario="chennai">
-                                    🏙️ Chennai Metro (12 Stops)
+                                    <i data-lucide="building-2"></i>
+                                    <span>Chennai Metro (12 Stops)</span>
                                 </button>
                                 <button class="btn btn-secondary btn-sm btn-seed-scenario" data-scenario="coimbatore">
-                                    🏭 Coimbatore Corridor (9 Stops)
+                                    <i data-lucide="factory"></i>
+                                    <span>Coimbatore Corridor (9 Stops)</span>
                                 </button>
                                 <button class="btn btn-secondary btn-sm btn-seed-scenario" data-scenario="madurai">
-                                    🏛️ Madurai Express (8 Stops)
+                                    <i data-lucide="landmark"></i>
+                                    <span>Madurai Express (8 Stops)</span>
                                 </button>
                             </div>
                         </div>
@@ -283,7 +290,9 @@
                                 </table>
                             </div>
                             <div id="locations-empty-state" style="display: none; text-align: center; padding: 48px 24px;">
-                                <div style="font-size: 2.5rem; margin-bottom: 12px;">📍</div>
+                                <div class="stat-icon" style="margin: 0 auto 14px auto; width: 56px; height: 56px; background: rgba(6, 182, 212, 0.12); color: #06b6d4;">
+                                    <i data-lucide="map-pin" style="width: 28px; height: 28px;"></i>
+                                </div>
                                 <h4 style="font-size: 1.1rem; color: #fff;">No Delivery Locations Registered</h4>
                                 <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px; margin-bottom: 16px;">
                                     Add custom delivery addresses or click one of the preset city scenarios above.
@@ -602,7 +611,9 @@
                                 </table>
                             </div>
                             <div id="reports-empty-state" style="display: none; text-align: center; padding: 48px 24px;">
-                                <div style="font-size: 2.5rem; margin-bottom: 12px;">📑</div>
+                                <div class="stat-icon" style="margin: 0 auto 14px auto; width: 56px; height: 56px; background: rgba(99, 102, 241, 0.12); color: #818cf8;">
+                                    <i data-lucide="file-text" style="width: 28px; height: 28px;"></i>
+                                </div>
                                 <h4 style="font-size: 1.1rem; color: #fff;">No Optimization Reports Yet</h4>
                                 <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">
                                     Optimizations will automatically generate downloadable dispatch reports here.
@@ -633,7 +644,7 @@
                                     <input type="number" class="form-control" id="set-service-time" value="8.0" step="0.5">
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">CO₂ Emission Factor (kg/km)</label>
+                                    <label class="form-label">CO2 Emission Factor (kg/km)</label>
                                     <input type="number" class="form-control" id="set-co2-factor" value="0.192" step="0.001">
                                 </div>
                             </div>
@@ -752,11 +763,13 @@
 
             <!-- Tab Switcher (Sign In / Register) -->
             <div style="display: flex; border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.02);">
-                <button id="tab-auth-login" type="button" style="flex: 1; padding: 14px; border: none; border-bottom: 2px solid var(--primary-cyan); background: transparent; color: #fff; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
-                    🔑 Manual Sign In
+                <button id="tab-auth-login" type="button" style="flex: 1; padding: 14px; border: none; border-bottom: 2px solid var(--primary-cyan); background: transparent; color: #fff; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i data-lucide="key-round" style="width: 16px; height: 16px;"></i>
+                    <span>Manual Sign In</span>
                 </button>
-                <button id="tab-auth-register" type="button" style="flex: 1; padding: 14px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
-                    📝 Register Account
+                <button id="tab-auth-register" type="button" style="flex: 1; padding: 14px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i>
+                    <span>Register Account</span>
                 </button>
             </div>
 
@@ -816,11 +829,11 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Password (min 6 chars) *</label>
-                            <input type="password" class="form-control" id="reg-password" placeholder="••••••••" required minlength="6">
+                            <input type="password" class="form-control" id="reg-password" placeholder="At least 6 characters" required minlength="6">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Confirm Password *</label>
-                            <input type="password" class="form-control" id="reg-confirm-password" placeholder="••••••••" required minlength="6">
+                            <input type="password" class="form-control" id="reg-confirm-password" placeholder="Re-enter password" required minlength="6">
                         </div>
                     </div>
 

@@ -72,7 +72,7 @@ const OptimizerManager = {
 
         this.isOptimizing = true;
         btnRun.disabled = true;
-        btnRun.innerHTML = `<span>⏳ Optimizing Tour...</span>`;
+        btnRun.innerHTML = `<span>Optimizing Tour...</span>`;
         if (progressContainer) progressContainer.style.display = 'block';
 
         let progress = 10;
@@ -155,7 +155,7 @@ const OptimizerManager = {
         this.isOptimizing = false;
         if (btnRun) {
             btnRun.disabled = false;
-            btnRun.innerHTML = `<span>⚡ Run Genetic Optimization</span>`;
+            btnRun.innerHTML = `<span>Run Genetic Optimization</span>`;
         }
         setTimeout(() => {
             if (progressContainer) progressContainer.style.display = 'none';
@@ -218,7 +218,7 @@ const OptimizerManager = {
 
             item.innerHTML = `
                 <div class="stop-order-bubble ${isDepot ? 'depot' : ''}">
-                    ${isDepot ? '🏢' : stop.stop_order}
+                    ${isDepot ? 'DEPOT' : stop.stop_order}
                 </div>
                 <div class="stop-item-info">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -228,9 +228,9 @@ const OptimizerManager = {
                         </span>
                     </div>
                     <div class="stop-item-meta">
-                        <span>👤 ${stop.customer_name || 'Dispatcher'}</span>
-                        <span>⏱️ Arr: +${stop.estimated_arrival_minutes}m</span>
-                        <span>📍 Cum: ${stop.cumulative_distance_km.toFixed(2)} km</span>
+                        <span>Customer: <b>${stop.customer_name || 'Dispatcher'}</b></span>
+                        <span>ETA: +${stop.estimated_arrival_minutes}m</span>
+                        <span>Total: ${stop.cumulative_distance_km.toFixed(2)} km</span>
                     </div>
                     <div style="font-size: 0.72rem; color: #10b981; margin-top: 4px; font-weight: 600;">
                         ${stop.action || 'Stop'}

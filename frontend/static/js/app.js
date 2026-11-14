@@ -568,17 +568,18 @@ const App = {
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
         
-        let icon = 'ℹ️';
-        if (type === 'success') icon = '✅';
-        if (type === 'error') icon = '❌';
-        if (type === 'warning') icon = '⚠️';
+        let iconName = 'info';
+        if (type === 'success') iconName = 'check-circle-2';
+        if (type === 'error') iconName = 'alert-circle';
+        if (type === 'warning') iconName = 'alert-triangle';
 
         toast.innerHTML = `
-            <span>${icon}</span>
+            <i data-lucide="${iconName}"></i>
             <div class="toast-message">${message}</div>
         `;
 
         container.appendChild(toast);
+        if (window.lucide) window.lucide.createIcons();
 
         setTimeout(() => {
             toast.style.opacity = '0';

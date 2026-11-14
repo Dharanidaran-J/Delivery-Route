@@ -57,9 +57,9 @@ const MapManager = {
         osmStandard.addTo(this.map);
 
         this.baseMaps = {
-            "🗺️ Original OpenStreetMap": osmStandard,
-            "🛰️ Satellite View (Esri)": esriSatellite,
-            "🛣️ Street Map (Esri)": esriStreet
+            "Original OpenStreetMap": osmStandard,
+            "Satellite View (Esri)": esriSatellite,
+            "Street Map (Esri)": esriStreet
         };
 
         // Add Layer Control for base map switching (topright)
@@ -136,10 +136,10 @@ const MapManager = {
 
             const whIcon = L.divIcon({
                 className: 'custom-leaflet-marker marker-depot',
-                html: '🏢',
-                iconSize: [38, 38],
-                iconAnchor: [19, 19],
-                popupAnchor: [0, -20]
+                html: '<span style="font-size: 10px; font-weight: 800; letter-spacing: 0.5px;">DEPOT</span>',
+                iconSize: [44, 44],
+                iconAnchor: [22, 22],
+                popupAnchor: [0, -22]
             });
 
             const whMarker = L.marker(whLatLng, { icon: whIcon });
@@ -247,16 +247,16 @@ const MapManager = {
 
                 const icon = L.divIcon({
                     className: `custom-leaflet-marker ${isDepot ? 'marker-depot' : 'marker-stop'}`,
-                    html: isDepot ? '🏢' : `<span>${stop.stop_order}</span>`,
-                    iconSize: isDepot ? [36, 36] : [30, 30],
-                    iconAnchor: isDepot ? [18, 18] : [15, 15]
+                    html: isDepot ? '<span style="font-size: 10px; font-weight: 800;">DEPOT</span>' : `<span>${stop.stop_order}</span>`,
+                    iconSize: isDepot ? [44, 44] : [30, 30],
+                    iconAnchor: isDepot ? [22, 22] : [15, 15]
                 });
 
                 const marker = L.marker(latLng, { icon: icon });
                 marker.bindPopup(`
                     <div style="padding: 6px; font-family: Inter, sans-serif;">
                         <div style="font-weight: 700; color: ${isDepot ? '#f43f5e' : '#06b6d4'}; font-size: 0.85rem; margin-bottom: 2px;">
-                            ${isDepot ? '🏢 DEPOT' : `📦 STOP #${stop.stop_order}`}
+                            ${isDepot ? 'DEPOT WAREHOUSE' : `STOP #${stop.stop_order}`}
                         </div>
                         <div style="font-weight: 700; font-size: 0.98rem; margin-bottom: 4px;">${stop.name}</div>
                         <div style="font-size: 0.8rem; color: #cbd5e1;">Customer: <b>${stop.customer_name || 'N/A'}</b></div>

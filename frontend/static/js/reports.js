@@ -85,13 +85,13 @@ const ReportsManager = {
                 <td>
                     <div style="display: flex; gap: 6px;">
                         <button class="btn btn-secondary btn-sm" onclick="ReportsManager.viewOptimization(${opt.id})" title="View on Map">
-                            🗺️ Map
+                            Map
                         </button>
                         <button class="btn btn-secondary btn-sm" onclick="ReportsManager.downloadCSV(${opt.id})" title="Download CSV">
-                            📥 CSV
+                            CSV
                         </button>
                         <button class="btn btn-primary btn-sm" onclick="ReportsManager.downloadPDF(${opt.id})" title="Download PDF Report">
-                            📄 PDF
+                            PDF
                         </button>
                     </div>
                 </td>
@@ -258,7 +258,7 @@ const ReportsManager = {
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(20);
             doc.setFont('helvetica', 'bold');
-            doc.text("RouteGen – Delivery Route Optimization Report", 30, 42);
+            doc.text("RouteGen - Delivery Route Optimization Report", 30, 42);
 
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');

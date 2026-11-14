@@ -111,8 +111,8 @@ const LocationsManager = {
             tr.innerHTML = `
                 <td>
                     ${isWh 
-                        ? '<span class="badge badge-warehouse">🏢 Warehouse Depot</span>' 
-                        : `<span class="badge badge-stop">📦 Stop #${loc.delivery_order || idx}</span>`}
+                        ? '<span class="badge badge-warehouse">Warehouse Depot</span>' 
+                        : `<span class="badge badge-stop">Stop #${loc.delivery_order || idx}</span>`}
                 </td>
                 <td>
                     <div style="font-weight: 600; color: #fff;">${loc.name}</div>
@@ -132,14 +132,14 @@ const LocationsManager = {
                     <div style="display: flex; gap: 6px;">
                         ${!isWh ? `
                             <button class="btn btn-secondary btn-sm" onclick="LocationsManager.setWarehouse(${loc.id})" title="Set as starting warehouse depot">
-                                🏢 Make Depot
+                                Make Depot
                             </button>
                         ` : ''}
                         <button class="btn btn-secondary btn-sm" onclick="LocationsManager.editLocation(${loc.id})" title="Edit location">
-                            ✏️ Edit
+                            Edit
                         </button>
                         <button class="btn btn-danger btn-sm" onclick="LocationsManager.deleteLocation(${loc.id})" title="Delete location">
-                            🗑️
+                            Delete
                         </button>
                     </div>
                 </td>
