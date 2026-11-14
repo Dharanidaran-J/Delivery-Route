@@ -342,7 +342,7 @@ const GAClientEngine = {
         return {
             success: true,
             optimization_id: Date.now(),
-            title: options.title || `Optimization – ${numDeliveries} Stops (Tamil Nadu Tour)`,
+            title: options.title || `Optimization - ${numDeliveries} Stops (Tamil Nadu Tour)`,
             summary: {
                 num_deliveries: numDeliveries,
                 original_distance_km: originalDistance,

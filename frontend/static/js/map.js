@@ -145,7 +145,7 @@ const MapManager = {
             const whMarker = L.marker(whLatLng, { icon: whIcon });
             whMarker.bindPopup(`
                 <div style="padding: 6px; font-family: Inter, sans-serif;">
-                    <div style="font-weight: 700; color: #f43f5e; margin-bottom: 4px;">🏢 Warehouse Depot (Start/Return)</div>
+                    <div style="font-weight: 700; color: #f43f5e; margin-bottom: 4px;">Warehouse Depot (Start/Return)</div>
                     <div style="font-size: 0.95rem; font-weight: 600;">${warehouse.name}</div>
                     <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">${warehouse.customer_address || 'Central Dispatch Hub'}</div>
                     <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Lat: ${warehouse.latitude.toFixed(4)}, Lon: ${warehouse.longitude.toFixed(4)}</div>
@@ -171,7 +171,7 @@ const MapManager = {
                 const marker = L.marker(latLng, { icon: stopIcon });
                 marker.bindPopup(`
                     <div style="padding: 6px; font-family: Inter, sans-serif;">
-                        <div style="font-weight: 700; color: #06b6d4; margin-bottom: 4px;">📦 Stop #${idx + 1}</div>
+                        <div style="font-weight: 700; color: #06b6d4; margin-bottom: 4px;">Stop #${idx + 1}</div>
                         <div style="font-size: 0.95rem; font-weight: 600;">${loc.name}</div>
                         <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 2px;">Customer: <b>${loc.customer_name || 'N/A'}</b></div>
                         <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">${loc.customer_address || ''}</div>
@@ -314,9 +314,9 @@ const MapManager = {
             this.pickCoordinateMarker = L.marker([lat, lng], {
                 icon: L.divIcon({
                     className: 'custom-leaflet-marker',
-                    html: '📍',
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 16]
+                    html: '<div style="width: 16px; height: 16px; background: #06b6d4; border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 0 10px #06b6d4;"></div>',
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8]
                 })
             }).addTo(this.map);
         }

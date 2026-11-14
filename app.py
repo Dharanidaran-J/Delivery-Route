@@ -40,7 +40,7 @@ def create_app():
     def health():
         return jsonify({
             "status": "healthy",
-            "app": "RouteGen – Smart Delivery Route Optimizer",
+            "app": "RouteGen - Smart Delivery Route Optimizer",
             "version": "2.0.0"
         })
 

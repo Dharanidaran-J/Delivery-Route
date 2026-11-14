@@ -241,8 +241,9 @@ const App = {
 
         if (!identifier || !password) {
             if (errAlert) {
-                errAlert.innerHTML = `<span>⚠️ Please enter both your username/email and password.</span>`;
+                errAlert.innerHTML = `<i data-lucide="alert-circle" style="width: 16px; height: 16px; min-width: 16px; margin-right: 6px;"></i><span>Please enter both your username/email and password.</span>`;
                 errAlert.style.display = 'flex';
+                if (window.lucide) lucide.createIcons();
             }
             return;
         }
@@ -305,24 +306,27 @@ const App = {
 
         if (!username || !email || !password) {
             if (errAlert) {
-                errAlert.innerHTML = `<span>⚠️ Full name, username, email, and password are required.</span>`;
+                errAlert.innerHTML = `<i data-lucide="alert-circle" style="width: 16px; height: 16px; min-width: 16px; margin-right: 6px;"></i><span>Full name, username, email, and password are required.</span>`;
                 errAlert.style.display = 'flex';
+                if (window.lucide) lucide.createIcons();
             }
             return;
         }
 
         if (password.length < 6) {
             if (errAlert) {
-                errAlert.innerHTML = `<span>⚠️ Password must be at least 6 characters long.</span>`;
+                errAlert.innerHTML = `<i data-lucide="alert-circle" style="width: 16px; height: 16px; min-width: 16px; margin-right: 6px;"></i><span>Password must be at least 6 characters long.</span>`;
                 errAlert.style.display = 'flex';
+                if (window.lucide) lucide.createIcons();
             }
             return;
         }
 
         if (password !== confirm_password) {
             if (errAlert) {
-                errAlert.innerHTML = `<span>⚠️ Passwords do not match. Please re-enter identical passwords.</span>`;
+                errAlert.innerHTML = `<i data-lucide="alert-circle" style="width: 16px; height: 16px; min-width: 16px; margin-right: 6px;"></i><span>Passwords do not match. Please re-enter identical passwords.</span>`;
                 errAlert.style.display = 'flex';
+                if (window.lucide) lucide.createIcons();
             }
             return;
         }
@@ -531,8 +535,9 @@ const App = {
                 <td><span style="color: #67e8f9;">${r.optimized_distance_km.toFixed(1)} km</span></td>
                 <td><span style="color: #10b981; font-weight: 700;">-${r.distance_saved_km.toFixed(1)} km (${r.improvement_percentage.toFixed(1)}%)</span></td>
                 <td>
-                    <button class="btn btn-secondary btn-sm" onclick="ReportsManager.viewOptimization(${r.id})">
-                        🗺️ Map
+                    <button class="btn btn-secondary btn-sm" onclick="ReportsManager.viewOptimization(${r.id})" style="display: inline-flex; align-items: center; gap: 4px;">
+                        <i data-lucide="map" style="width: 14px; height: 14px;"></i>
+                        <span>View Map</span>
                     </button>
                 </td>
             `;

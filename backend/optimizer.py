@@ -53,7 +53,7 @@ def run_optimization():
         mutation_method = 'inversion'
 
     use_road_multiplier = bool(data.get('use_road_multiplier', False))
-    title = (data.get('title') or f"Optimization – {len(deliveries)} Stops ({selection_method.capitalize()} + {crossover_method.upper()})").strip()
+    title = (data.get('title') or f"Optimization - {len(deliveries)} Stops ({selection_method.capitalize()} + {crossover_method.upper()})").strip()
 
     # 3. Instantiate and run Genetic Algorithm
     ga = GeneticAlgorithm(
